@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Node</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="chat-wrapper">
+        <p class="chat-heading" id="header">Chat</p>
+        <div class="chat-list-wrapper">
+          <ul class="chat-list" id="chatList"></ul>
+          <div class="chat-action">
+            <input
+              class="chat-input"
+              id="chat-input"
+              onkeyup="broadcastKeyUpMessage(event)"
+            />
+            <button class="chat-button" onClick="broadcastMessage()">
+              Send
+            </button>
+            <button class="chat-button" onClick="chatLogin()" id="chat-login">
+              Login
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="modal">
+        <div class="modal-card">
+          <form class="modal-form" onsubmit="modalSubmit(event)">
+            <div class="modal-field">
+              <label class="modal-form-label">Name</label>
+              <input type="text" class="modal-form-control-sm" id="name" />
+            </div>
+            <button class="modal-btn">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      const header = document.getElementById("header");
+      header.innerHTML = `Welcome ${localStorage.getItem(
+        "name"
+      )} in public chat room`;
+
+      const modal = document.querySelector("#modal");
+      //set to dom from localstorage
+      document.getElementById("name").value = localStorage.getItem("name");
+
+      function chatLogin() {
+        modal.style.visibility = "visible";
+      }
+
+      function modalSubmit(event) {
+        event.preventDefault();
+        const name = document.getElementById("name").value;
+        localStorage.setItem("name", name);
+        modal.style.visibility = "hidden";
+      }
+
+      const socket = io();
+      socket.on("handleMessage", (message) => {
+        const chartList = document.querySelector("#chatList");
+        chartList.append(getListItem(message));
+        chartList.scrollBy(0, 100);
+      });
+
+      function getListItem(message) {
+        const li = document.createElement("li");
+        li.classList = "chat-list-item";
+
+        const span = document.createElement("span");
+        span.classList = "chat-list-item-name";
+        span.innerText = message.name;
+        li.appendChild(span);
+
+        li.innerText += "- " + message.message;
+
+        return li;
+      }
+
+      function broadcastKeyUpMessage(e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+          broadcastMessage();
+        }
+      }
+
+      function broadcastMessage() {
+        //check register or not
+        const name = document.getElementById("name").value;
+
+        if (!name) {
+          alert("Enter name");
+          return;
+        }
+
+        const input = document.querySelector("#chat-input");
+        if (!input.value) {
+          return false;
+        }
+        socket.emit("broadcastMessage", { name: name, message: input.value });
+        input.value = "";
+      }
+    </script>
+  </body>
+</html>
